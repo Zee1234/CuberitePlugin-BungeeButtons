@@ -6,7 +6,7 @@ Button-based Bungeecord Teleportation for the Cuberite MC Server.
 `/bungeebutton`    
 Begins the creation of a BungeeButton    
 Permission: bungeebutton.create.button    
-Parameters: <Name> <Server> <Permission>    
+Parameters: {Name} {Server} {Permission}    
 After running this command, the first button you click that is not already a BungeeButton will become a BungeeButton that teleports the player to <Server> so long as they have <Permission>
 
 `/bungeebuttondel`    
