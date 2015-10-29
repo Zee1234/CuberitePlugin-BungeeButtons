@@ -1,9 +1,12 @@
-PLUGIN = nil;
-BUTTONS = {};
-PREPAREDPLAYER = {};
-local LIP = require 'LIP';
-PLUGINDIR = nil;
-debug = false;
+local PLUGIN = nil;
+local BUTTONS = {};
+local PREPAREDPLAYER = {};
+local PLUGINDIR = nil;
+local debug = false;
+
+LIP = require 'LIP'
+PMLib = require 'PMLib'
+ZLib = require 'ZLib'
  
 function Initialize(Plugin)
 	Plugin:SetName("BungeecordTeleButton")
@@ -12,15 +15,19 @@ function Initialize(Plugin)
 	-- Hooks
   cPluginManager.AddHook(cPluginManager.HOOK_PLAYER_USED_BLOCK, OnPlayerUsedBlock)
   cPluginManager.AddHook(cPluginManager.HOOK_PLAYER_JOINED, OnLogin)
- 
+  
  
 	PLUGIN = Plugin
-  PLUGINDIR = cPluginManager:GetPluginsPath()
+  PLUGINDIR = Plugin:GetFolderName()
   --if(debug) then LOG(PLUGINDIR) end
-  BUTTONS = LIP.load(PLUGINDIR .. "/BungeeButtons/buttons.ini")
+  if(cFile:IsFile("Plugins\\" .. PLUGINDIR .. "\\buttons.ini")) then
+    BUTTONS = LIP.load("Plugins\\" .. PLUGINDIR .. "\\buttons.ini")
+  else
+    cFile:Copy("Plugins\\" .. PLUGINDIR .. "/BUTTONS.ini.default","Plugins\\" .. PLUGINDIR .. "/BUTTONS.ini")
+  end
 	-- Command Bindings
   -- Use the InfoReg shared library to process the Info.lua file:
-  dofile(PLUGINDIR .. "/InfoReg.lua")
+  dofile("Plugins\\" .. PLUGINDIR .. "\\InfoReg.lua")
   RegisterPluginInfoCommands()
   --RegisterPluginInfoConsoleCommands()
  
@@ -32,52 +39,8 @@ function Initialize(Plugin)
   return true
 end
 
-function StringLenToASCII(Player,a_String)
-  --if(debug) then LOG("Converting String to ASCII") end
-  local StringLen = tostring(string.len(a_String));
-  local t = {
-    ["1"] = "\0\1",
-    ["2"] = "\0\2",
-    ["3"] = "\0\3",
-    ["4"] = "\0\4",
-    ["5"] = "\0\5",
-    ["6"] = "\0\6",
-    ["7"] = "\0\7",
-    ["8"] = "\0\8",
-    ["9"] = "\0\9",
-    ["10"] = "\0\10",
-    ["11"] = "\0\11",
-    ["12"] = "\0\12",
-    ["13"] = "\0\13",
-    ["14"] = "\0\14",
-    ["15"] = "\0\15",
-    ["16"] = "\0\16",
-    ["17"] = "\0\17",
-    ["18"] = "\0\18",
-    ["19"] = "\0\19",
-    ["20"] = "\0\20",
-    ["21"] = "\0\21",
-    ["22"] = "\0\22",
-    ["23"] = "\0\23",
-    ["24"] = "\0\24",
-    ["25"] = "\0\25",
-    ["26"] = "\0\26",
-    ["27"] = "\0\27",
-    ["28"] = "\0\28",
-    ["29"] = "\0\29",
-    ["30"] = "\0\30",
-  }
-  if(t[StringLen] == Nil) then
-    LOG("The server name is incompatible with this plugin! Please make sure it is 30 characters or less!");
-    Player:SendMessageFailure("The server name is incompatible with this plugin! Please make sure it is 30 characters or less!");
-    return false
-  else
-    return t[StringLen]
-  end
-end
-
 function ReadyPlayer(Player)
-  if(Player == Nil) then
+  if not Player then
     return true
   end
   local PlayerName = Player:GetName();
@@ -93,8 +56,6 @@ end
  
 function FindServer(BlockX,BlockY,BlockZ)
   --if(debug) then LOG("Searching for Server!") end
-  local ButtonNumber = #BUTTONS;
-  --if(debug) then LOG(ButtonNumber) end
   local ServerName = "";
   for Key, Value in pairs(BUTTONS) do
     if(Value.X == BlockX and Value.Y == BlockY and Value.Z == BlockZ) then
@@ -108,8 +69,6 @@ end
  
 function CheckIfButtonNameTaken(ButtonName)
   --if(debug) then LOG("Checking button names...") end
-  local ButtonNumber = #BUTTONS;
-  --if(debug) then LOG(ButtonNumber) end
   for Key,Value in pairs(BUTTONS) do
     --if(debug) then LOG(Key, Value) end
     if(tostring(ButtonName) == Value.Name) then
@@ -130,7 +89,8 @@ function OnPlayerUsedBlock(Player, BlockX, BlockY, BlockZ, BlockFace, CursorX, C
     if(PREPAREDPLAYER[PlayerName].Ready) then
       if(CheckIfButtonNameTaken(PREPAREDPLAYER[PlayerName].ButtonName)) then
         --if(debug) then LOG(PlayerName .. ", how did you fuck this one up?") end
-        Player:SendMessageFailure("Button name in use!");
+        PREPAREDPLAYER[PlayerName].Ready = false
+        Player:SendMessageFailure("Button name in use! You are no longer creating a BungeeButton!");
       else
         --if(debug) then LOG("Making new button entry..") end
         BUTTONS[PREPAREDPLAYER[PlayerName].ButtonName] = {
@@ -143,13 +103,16 @@ function OnPlayerUsedBlock(Player, BlockX, BlockY, BlockZ, BlockFace, CursorX, C
         }
         --if(debug) then LOG(BUTTONS[PREPAREDPLAYER[PlayerName].ButtonName].Name .. " " .. BUTTONS[PREPAREDPLAYER[PlayerName].ButtonName].X .. " " .. BUTTONS[PREPAREDPLAYER[PlayerName].ButtonName].Y .. " " .. BUTTONS[PREPAREDPLAYER[PlayerName].ButtonName].Z .. " " .. BUTTONS[PREPAREDPLAYER[PlayerName].ButtonName].Server .. " " .. BUTTONS[PREPAREDPLAYER[PlayerName].ButtonName].Permission) end
         PREPAREDPLAYER[PlayerName].Ready = false
+        Player:SendMessageSuccess("Button successfully created!")
+        LOG("BungeeButton "..PREPAREDPLAYER[PlayerName].ButtonName.." created at ("..BlockX ..",".. BlockY..","..BlockZ..")")
       end
     elseif(PREPAREDPLAYER[PlayerName].ReadyDelete) then
-      local ServerInfo = FindServer(BlockX,BlockY,BlockZ);
+      local ServerInfo = FindServer(BlockX,BlockY,BlockZ)
       if(Player:HasPermission("bungeebutton.delete.button")) then
         if(ServerInfo.Found) then
-          BUTTONS[ServerInfo.ButtonName] = nil;
-          PREPAREDPLAYER[PlayerName].ReadyDelete = false;
+          BUTTONS[ServerInfo.ButtonName] = nil
+          PREPAREDPLAYER[PlayerName].ReadyDelete = false
+          Player:sendMessageInfo("Button " .. ServerInfo.ButtonName .. " has been removed!")
         else
           Player:SendMessageInfo("The clicked button is not a Bungee Button! Use /bungeebuttondel again to stop trying to remove a BungeeButton. Otherwise, use a BungeeButton to remove.");
         end
@@ -157,10 +120,9 @@ function OnPlayerUsedBlock(Player, BlockX, BlockY, BlockZ, BlockFace, CursorX, C
     else
       --if(debug) then LOG("Checking if button is a server porter") end
       local ServerInfo = FindServer(BlockX,BlockY,BlockZ);
-      if(ServerInfo.Found) then
-        if(Player:HasPermission(ServerInfo.Permission)) then
-          --Bungeecord Teleport Thingy Here, ServerInfo.ServerName, PlayerName
-          Player:GetClientHandle():SendPluginMessage("BungeeCord", "\0\7Connect" .. StringLenToASCII(Player,ServerInfo.ServerName) .. ServerInfo.ServerName);
+      if ServerInfo.Found then
+        if Player:HasPermission(ServerInfo.Permission) then
+          Player:GetClientHandle():SendPluginMessage(PMLib:new("BungeeCord"):writeUTF("Connect"):writeUTF(ServerInfo.ServerName):GetOut())
         else
           Player:SendMessageFailure("You do not have permission to use this button!");
         end
@@ -185,6 +147,7 @@ function BungeeButton(a_Split,a_Player)
       PREPAREDPLAYER[PlayerName].Permission = a_Split[4];
       PREPAREDPLAYER[PlayerName].Ready = true;
       --if(debug) then LOG(tostring(PREPAREDPLAYER[PlayerName].ButtonName) .. " " .. tostring(PREPAREDPLAYER[PlayerName].Server) .. " " .. tostring(PREPAREDPLAYER[PlayerName].Permission) .. " " .. tostring(PREPAREDPLAYER[PlayerName].Ready)) end
+      a_Player:SendMessageSuccess("Creation started! Use a button to create!")
     end
   else
     a_Player:SendMessageFailure("Use the command like this: /bungeebutton {Name} {Server} {Permission}");
@@ -198,22 +161,22 @@ function BungeeButtonDel(a_Split,Player)
     PREPAREDPLAYER[PlayerName].ReadyDelete = true;
   elseif(#a_Split == 2) then
     BUTTONS[a_Split[2]] = nil;
+    Player:SendMessageSuccess("Button " .. a_Split[2] .. " deleted successfully!")
   else
-    a_Player:SendMessageFailure("Use the command like this: /bungeebuttondel OR /bungeebuttondel {Name}");
+    Player:SendMessageFailure("Use the command like this: /bungeebuttondel OR /bungeebuttondel {Name}");
   end
   return true
 end
 
 function BungeeButtonReload(Split,Player)
   BUTTONS = {};
-  BUTTONS = LIP.load(PLUGINDIR .. "/BungeeButtons/buttons.ini");
+  BUTTONS = LIP.load("Plugins\\" .. PLUGINDIR .. "\\buttons.ini");
   Player:SendMessageSuccess("Config loaded!");
   return true
 end
 
 function BungeeButtonSave(Split,Player)
-  BUTTONS = {};
-  LIP.save(PLUGINDIR .. "/BungeeButtons/buttons.ini",BUTTONS);
+  LIP.save("Plugins\\" .. PLUGINDIR .. "\\buttons.ini",BUTTONS);
   Player:SendMessageSuccess("Buttons saved!");
   return true
 end
@@ -234,7 +197,9 @@ function OnDisable()
   end
   IniFile:WriteFile(PLUGIN:GetLocalFolder() .. "/buttons.ini");
 --]]
-  LIP.save(PLUGINDIR .. "/BungeeButtons/buttons.ini",BUTTONS)
+  LIP.save("Plugins\\" .. PLUGINDIR .. "\\buttons.ini",BUTTONS)
   LOG(PLUGIN:GetName() .. " has finished saving!")
 	LOG(PLUGIN:GetName() .. " is shutting down...")
 end
+
+
