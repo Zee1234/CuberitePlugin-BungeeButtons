@@ -201,5 +201,3 @@ function OnDisable()
   LOG(PLUGIN:GetName() .. " has finished saving!")
 	LOG(PLUGIN:GetName() .. " is shutting down...")
 end
-
-
