@@ -20,14 +20,14 @@ function Initialize(Plugin)
 	PLUGIN = Plugin
   PLUGINDIR = Plugin:GetFolderName()
   --if(debug) then LOG(PLUGINDIR) end
-  if(cFile:IsFile("Plugins\\" .. PLUGINDIR .. "\\buttons.ini")) then
-    BUTTONS = LIP.load("Plugins\\" .. PLUGINDIR .. "\\buttons.ini")
+  if(cFile:IsFile("Plugins/" .. PLUGINDIR .. "/buttons.ini")) then
+    BUTTONS = LIP.load("Plugins/" .. PLUGINDIR .. "/buttons.ini")
   else
-    cFile:Copy("Plugins\\" .. PLUGINDIR .. "/BUTTONS.ini.default","Plugins\\" .. PLUGINDIR .. "/BUTTONS.ini")
+    cFile:Copy("Plugins/" .. PLUGINDIR .. "/BUTTONS.ini.default","Plugins/" .. PLUGINDIR .. "/BUTTONS.ini")
   end
 	-- Command Bindings
   -- Use the InfoReg shared library to process the Info.lua file:
-  dofile("Plugins\\" .. PLUGINDIR .. "\\InfoReg.lua")
+  dofile("Plugins/" .. PLUGINDIR .. "/InfoReg.lua")
   RegisterPluginInfoCommands()
   --RegisterPluginInfoConsoleCommands()
  
@@ -170,13 +170,13 @@ end
 
 function BungeeButtonReload(Split,Player)
   BUTTONS = {};
-  BUTTONS = LIP.load("Plugins\\" .. PLUGINDIR .. "\\buttons.ini");
+  BUTTONS = LIP.load("Plugins/" .. PLUGINDIR .. "/buttons.ini");
   Player:SendMessageSuccess("Config loaded!");
   return true
 end
 
 function BungeeButtonSave(Split,Player)
-  LIP.save("Plugins\\" .. PLUGINDIR .. "\\buttons.ini",BUTTONS);
+  LIP.save("Plugins/" .. PLUGINDIR .. "/buttons.ini",BUTTONS);
   Player:SendMessageSuccess("Buttons saved!");
   return true
 end
@@ -197,7 +197,7 @@ function OnDisable()
   end
   IniFile:WriteFile(PLUGIN:GetLocalFolder() .. "/buttons.ini");
 --]]
-  LIP.save("Plugins\\" .. PLUGINDIR .. "\\buttons.ini",BUTTONS)
+  LIP.save("Plugins/" .. PLUGINDIR .. "/buttons.ini",BUTTONS)
   LOG(PLUGIN:GetName() .. " has finished saving!")
 	LOG(PLUGIN:GetName() .. " is shutting down...")
 end
